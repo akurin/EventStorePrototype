@@ -6,16 +6,21 @@ namespace EventStore.Mongo
     internal sealed class Commit
     {
         public Guid StreamId { get; }
-        public int StreamVersion { get; }
-        public IEnumerable<Guid> EventsIds { get; }
+        public long IndexInStream { get; }
+        public long IndexInAllStreams { get; }
+        public long EventIndexInStream { get; }
+        public long EventIndexInAllStreams { get; }
+        public IEnumerable<Guid> EventIds { get; }
 
-        public Commit(Guid streamId, int streamVersion, IEnumerable<Guid> eventsIds)
+        public Commit(Guid streamId, long indexInStream, long indexInAllStreams, long eventIndexInStream,
+            long eventIndexInAllStreams, IEnumerable<Guid> eventIds)
         {
-            if (eventsIds == null) throw new ArgumentNullException(nameof(eventsIds));
-
             StreamId = streamId;
-            StreamVersion = streamVersion;
-            EventsIds = eventsIds;
+            IndexInStream = indexInStream;
+            IndexInAllStreams = indexInAllStreams;
+            EventIndexInStream = eventIndexInStream;
+            EventIndexInAllStreams = eventIndexInAllStreams;
+            EventIds = eventIds;
         }
     }
 }

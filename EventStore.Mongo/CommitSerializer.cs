@@ -7,7 +7,10 @@ namespace EventStore.Mongo
     internal sealed class CommitSerializer
     {
         public static readonly string StreamIdFieldName = "streamId";
-        public static readonly string StreamVersionFieldName = "streamVersion";
+        public static readonly string IndexInStreamFieldName = "indexInStream";
+        public static readonly string IndexInAllStreamsFileName = "indexInAllStreams";
+        public static readonly string EventIndexInStreamFieldName = "eventIndexInStream";
+        public static readonly string EventIndexInAllStreamsFieldName = "eventIndexInAllStreams";
         public static readonly string EventIdsFieldName = "eventIds";
 
         public BsonDocument Serialize(Commit commit)
@@ -17,8 +20,11 @@ namespace EventStore.Mongo
             return new BsonDocument
             {
                 {StreamIdFieldName, commit.StreamId},
-                {StreamVersionFieldName, commit.StreamVersion},
-                {EventIdsFieldName, new BsonArray(commit.EventsIds)}
+                {IndexInStreamFieldName, commit.IndexInStream},
+                {IndexInAllStreamsFileName, commit.IndexInAllStreams},
+                {EventIndexInStreamFieldName, commit.EventIndexInStream},
+                {EventIndexInAllStreamsFieldName, commit.EventIndexInAllStreams},
+                {EventIdsFieldName, new BsonArray(commit.EventIds)}
             };
         }
 
@@ -27,13 +33,22 @@ namespace EventStore.Mongo
             if (document == null) throw new ArgumentNullException(nameof(document));
 
             var streamId = document[StreamIdFieldName].AsGuidOrEventStoreException();
-            var streamVersion = document[StreamVersionFieldName].AsInt32OrEventStoreException();
+            var indexInStream = document[IndexInStreamFieldName].AsInt64OrEventStoreException();
+            var indexInAllStreams = document[IndexInAllStreamsFileName].AsInt64OrEventStoreException();
+            var eventIndexInStream = document[EventIndexInStreamFieldName].AsInt64OrEventStoreException();
+            var eventIndexInAllSreams = document[EventIndexInAllStreamsFieldName].AsInt64OrEventStoreException();
             var eventIds = document[EventIdsFieldName]
                 .AsBsonArrayOrEventStoreException()
                 .Select(bsonValue => bsonValue.AsGuidOrEventStoreException())
                 .ToList();
 
-            return new Commit(streamId, streamVersion, eventIds);
+            return new Commit(
+                streamId:streamId,
+                indexInStream: indexInStream,
+                indexInAllStreams: indexInAllStreams,
+                eventIndexInStream: eventIndexInStream,
+                eventIndexInAllStreams: eventIndexInAllSreams,
+                eventIds: eventIds);
         }
     }
 }

@@ -70,13 +70,16 @@
     </Otherwise>
   </Choose>
   <ItemGroup>
-    <Compile Include="FibonacciEventMother.cs" />
+    <Compile Include="CounterEventMother.cs" />
     <Compile Include="MongoEventStoreSpecification.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="FibonacciNumberCalculated.cs" />
-    <Compile Include="when_reading_events_while_a_background_worker_is_writing_events.cs" />
-    <Compile Include="when_reading_events_while_a_couple_of_background_workers_are_writing_events.cs" />
-    <Compile Include="when_reading_events.cs" />
+    <Compile Include="CounterIncremented.cs" />
+    <Compile Include="when_appending_events_to_empty_stream_with_expected_stream_length_greater_than_zero.cs" />
+    <Compile Include="when_appending_events_simultaneously_to_same_stream.cs" />
+    <Compile Include="when_reading_all_events_with_different_offset_and_limit.cs" />
+    <Compile Include="when_reading_events_while_a_background_worker_is_appending_a_bunch_of_events.cs" />
+    <Compile Include="when_appending_events_to_not_empty_stream_with_wrong_expected_stream_length.cs" />
+    <Compile Include="when_reading_events_from_stream.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\EventStore.Mongo\EventStore.Mongo.csproj">

@@ -27,6 +27,14 @@ namespace EventStore.Mongo
             return value.AsInt32;
         }
 
+        public static long AsInt64OrEventStoreException(this BsonValue value)
+        {
+            if (value == null) throw new ArgumentNullException(nameof(value));
+
+            EnsureValueHasExpectedType(value, BsonType.Int64);
+            return value.AsInt64;
+        }
+
         public static BsonArray AsBsonArrayOrEventStoreException(this BsonValue value)
         {
             if (value == null) throw new ArgumentNullException(nameof(value));

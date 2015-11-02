@@ -57,6 +57,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="BsonValueCastExtensions.cs" />
+    <Compile Include="MongoExceptionAnalyzer.cs" />
     <Compile Include="Commit.cs" />
     <Compile Include="CommitDao.cs" />
     <Compile Include="CommitSerializer.cs" />
@@ -65,6 +66,8 @@
     <Compile Include="EventContainer.cs" />
     <Compile Include="EventContainerSerializer.cs" />
     <Compile Include="IEventSerializer.cs" />
+    <Compile Include="IndexCreator.cs" />
+    <Compile Include="InsertCommitResult.cs" />
     <Compile Include="MongoEventStore.cs" />
     <Compile Include="MongoEventStoreFactory.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

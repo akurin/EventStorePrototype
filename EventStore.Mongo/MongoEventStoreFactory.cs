@@ -22,7 +22,8 @@ namespace EventStore.Mongo
             var mongoEventStore = new MongoEventStore(commitCollection, eventCollection,
                 eventSerializer ?? CreateDefaultEventBsonDocumentSerializer());
 
-            await mongoEventStore.EnsureIndexesAsync();
+            var indexCreator = new IndexCreator(commitCollection);
+            await indexCreator.EnsureIndexesAsync();
 
             return mongoEventStore;
         }

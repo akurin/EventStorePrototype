@@ -17,9 +17,13 @@ namespace EventStore.Tests
             return mongoEventStoreFactory.CreateAsync(ConnectionString, DatabaseName).Result;
         }
 
-        [TestInitialize]
         [TestCleanup]
-        public void DropDatabase()
+        public void TestCleanup()
+        {
+            DropDatabase();
+        }
+
+        protected static void DropDatabase()
         {
             var mongoClient = new MongoClient();
             mongoClient.DropDatabaseAsync(DatabaseName).Wait();
