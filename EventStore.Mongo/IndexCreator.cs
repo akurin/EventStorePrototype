@@ -8,9 +8,9 @@ namespace EventStore.Mongo
     internal sealed class IndexCreator
     {
         public static readonly string StreamIdAndIndexInStreamName =
-            $"{CommitSerializer.StreamIdFieldName}_{CommitSerializer.IndexInStream}";
+            $"{CommitSerializer.StreamIdFieldName}_{CommitSerializer.IndexInStreamFieldName}";
 
-        public static readonly string IndexInAllStreamsIndexName = CommitSerializer.IndexInAllStreams;
+        public static readonly string IndexInAllStreamsIndexName = CommitSerializer.IndexInAllStreamsFileName;
 
         private readonly IMongoCollection<BsonDocument> _commitCollection;
 
@@ -31,7 +31,7 @@ namespace EventStore.Mongo
         {
             var keys = Builders<BsonDocument>.IndexKeys
                 .Ascending(CommitSerializer.StreamIdFieldName)
-                .Ascending(CommitSerializer.IndexInStream);
+                .Ascending(CommitSerializer.IndexInStreamFieldName);
 
             await _commitCollection
                 .Indexes.CreateOneAsync(keys, new CreateIndexOptions {Name = StreamIdAndIndexInStreamName, Unique = true});
@@ -40,9 +40,9 @@ namespace EventStore.Mongo
         private async Task IndexInAllStreamsIndexAsync()
         {
             var keys = Builders<BsonDocument>.IndexKeys
-                .Ascending(CommitSerializer.IndexInAllStreams);
+                .Ascending(CommitSerializer.IndexInAllStreamsFileName);
 
-            var keyName = CommitSerializer.IndexInAllStreams;
+            var keyName = CommitSerializer.IndexInAllStreamsFileName;
 
             await _commitCollection
                 .Indexes.CreateOneAsync(keys, new CreateIndexOptions {Name = keyName, Unique = true});

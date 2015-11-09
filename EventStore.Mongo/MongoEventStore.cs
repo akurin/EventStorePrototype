@@ -53,9 +53,15 @@ namespace EventStore.Mongo
             InsertCommitResult insertCommitResult;
             do
             {
-                var lastCommit = await GetLastCommit();
-                var commit = CreateCommit(streamId, lastCommitInStream, lastCommit, eventContainers);
+                var lastCommitAllStreams = await GetLastCommit();
+                var commit = CreateCommit(
+                    streamId: streamId,
+                    lastCommitInStream: lastCommitInStream,
+                    lastCommitAllStreams: lastCommitAllStreams,
+                    identifiedEvents: eventContainers);
+
                 insertCommitResult = await TryInsertAsync(commit);
+
             } while (insertCommitResult == InsertCommitResult.DuplicateCommitWithSameIndexInAllStreams);
 
             if (insertCommitResult == InsertCommitResult.DuplicateCommitWithSameIndexInStream)
@@ -71,7 +77,7 @@ namespace EventStore.Mongo
         private static long CalculateActualStreamLength(Option<Commit> lastCommitInStream)
         {
             return lastCommitInStream
-                .Map(commit => commit.EventIndexInStream + commit.EventIds.Count())
+                .Map(commit => commit.EventIndexInStreamStartsFrom + commit.EventIds.Count())
                 .ValueOr(0);
         }
 
@@ -95,33 +101,33 @@ namespace EventStore.Mongo
         private static Commit CreateCommit(
             Guid streamId,
             Option<Commit> lastCommitInStream,
-            Option<Commit> lastCommit,
+            Option<Commit> lastCommitAllStreams,
             IEnumerable<EventContainer> identifiedEvents)
         {
             var indexInStream = lastCommitInStream
                 .Map(commit => commit.IndexInStream + 1)
                 .ValueOr(0);
 
-            var indexInAllStreams = lastCommit
+            var indexInAllStreams = lastCommitAllStreams
                 .Map(commit => commit.IndexInAllStreams + 1)
                 .ValueOr(0);
 
             var eventsIds = identifiedEvents.Select(identifiedEvent => identifiedEvent.Id);
 
             var eventIndexInStream = lastCommitInStream
-                .Map(commit => commit.EventIndexInStream + commit.EventIds.Count())
+                .Map(commit => commit.EventIndexInStreamStartsFrom + commit.EventIds.Count())
                 .ValueOr(0);
 
-            var eventIndexInAllStreams = lastCommit
-                .Map(commit => commit.EventIndexInAllStreams + commit.EventIds.Count())
+            var eventIndexInAllStreams = lastCommitAllStreams
+                .Map(commit => commit.EventIndexInAllStreamsStartsFrom + commit.EventIds.Count())
                 .ValueOr(0);
 
             return new Commit(
                 streamId: streamId,
                 indexInStream: indexInStream,
                 indexInAllStreams: indexInAllStreams,
-                eventIndexInStream: eventIndexInStream,
-                eventIndexInAllStreams: eventIndexInAllStreams,
+                eventIndexInStreamStartsFrom: eventIndexInStream,
+                eventIndexInAllStreamsStartsFrom: eventIndexInAllStreams,
                 eventIds: eventsIds);
         }
 
@@ -133,77 +139,44 @@ namespace EventStore.Mongo
 
         public async Task<IEnumerable<IEvent>> ReadAsync(Guid streamId, int offset, int limit)
         {
-            var result = new List<IEvent>(limit);
-
-            using (var cursor = await _commitDao.GetCommitsInStreamAsync(streamId, offset))
+            using (var cursor = await _commitDao.FindCommitsInStreamAsync(streamId, offset))
             {
-                while (await cursor.MoveNextAsync())
-                {
-                    var currentDocuments = cursor.Current;
-
-                    foreach (var currentDocument in currentDocuments)
-                    {
-                        var commit = _commitSerializer.Deserialize(currentDocument);
-                        foreach (var eventId in commit.EventIds)
-                        {
-                            var eventDocument = await _eventDao.GetByAsync(eventId);
-                            var eventContainer = _eventContainerSerializer.Deserialize(eventDocument);
-                            result.Add(eventContainer.Event);
-
-                            if (result.Count >= limit)
-                                break;
-                        }
-                    }
-                }
+                return await CollectEventsAsync(limit, cursor);
             }
-
-            return result;
         }
 
-        private async Task<IEnumerable<IEvent>> GetEventsForAsync(IEnumerable<BsonDocument> commitDocuments)
+        private async Task<IEnumerable<IEvent>> CollectEventsAsync(int limit, IAsyncCursor<BsonDocument> cursor)
         {
-            var commits = commitDocuments.Select(_commitSerializer.Deserialize);
-            var eventIds = commits.SelectMany(commit => commit.EventIds);
-
             var result = new List<IEvent>();
 
-            foreach (var eventId in eventIds)
+            while (await cursor.MoveNextAsync())
             {
-                var eventDocument = await _eventDao.GetByAsync(eventId);
-                var identifiedEvent = _eventContainerSerializer.Deserialize(eventDocument);
-                result.Add(identifiedEvent.Event);
-            }
+                var currentDocuments = cursor.Current;
 
-            return result;
-        }
-
-        public async Task<IEnumerable<IEvent>> ReadAllAsync(int offset, int limit) // TODO: refactor duplicate code
-        {
-            var result = new List<IEvent>(limit);
-
-            using (var cursor = await _commitDao.FindInAllStreamsAsync(offset))
-            {
-                while (await cursor.MoveNextAsync())
+                foreach (var currentDocument in currentDocuments)
                 {
-                    var currentDocuments = cursor.Current;
-
-                    foreach (var currentDocument in currentDocuments)
+                    var commit = _commitSerializer.Deserialize(currentDocument);
+                    foreach (var eventId in commit.EventIds)
                     {
-                        var commit = _commitSerializer.Deserialize(currentDocument);
-                        foreach (var eventId in commit.EventIds)
-                        {
-                            var eventDocument = await _eventDao.GetByAsync(eventId);
-                            var eventContainer = _eventContainerSerializer.Deserialize(eventDocument);
-                            result.Add(eventContainer.Event);
+                        var eventDocument = await _eventDao.GetByAsync(eventId);
+                        var eventContainer = _eventContainerSerializer.Deserialize(eventDocument);
+                        result.Add(eventContainer.Event);
 
-                            if (result.Count >= limit)
-                                return result;
-                        }
+                        if (result.Count >= limit)
+                            return result;
                     }
                 }
             }
 
             return result;
+        }
+
+        public async Task<IEnumerable<IEvent>> ReadAllAsync(int offset, int limit)
+        {
+            using (var cursor = await _commitDao.FindInAllStreamsAsync(offset))
+            {
+                return await CollectEventsAsync(limit, cursor);
+            }
         }
     }
 }

@@ -9,8 +9,8 @@ namespace EventStore.Mongo
         public static readonly string StreamIdFieldName = "streamId";
         public static readonly string IndexInStreamFieldName = "indexInStream";
         public static readonly string IndexInAllStreamsFileName = "indexInAllStreams";
-        public static readonly string EventIndexInStreamFieldName = "eventIndexInStream";
-        public static readonly string EventIndexInAllStreamsFieldName = "eventIndexInAllStreams";
+        public static readonly string EventIndexInStreamFieldName = "eventIndexInStreamStartsFrom";
+        public static readonly string EventIndexInAllStreamsFieldName = "eventIndexInAllStreamsStartsFrom";
         public static readonly string EventIdsFieldName = "eventIds";
 
         public BsonDocument Serialize(Commit commit)
@@ -22,8 +22,8 @@ namespace EventStore.Mongo
                 {StreamIdFieldName, commit.StreamId},
                 {IndexInStreamFieldName, commit.IndexInStream},
                 {IndexInAllStreamsFileName, commit.IndexInAllStreams},
-                {EventIndexInStreamFieldName, commit.EventIndexInStream},
-                {EventIndexInAllStreamsFieldName, commit.EventIndexInAllStreams},
+                {EventIndexInStreamFieldName, commit.EventIndexInStreamStartsFrom},
+                {EventIndexInAllStreamsFieldName, commit.EventIndexInAllStreamsStartsFrom},
                 {EventIdsFieldName, new BsonArray(commit.EventIds)}
             };
         }
@@ -35,8 +35,8 @@ namespace EventStore.Mongo
             var streamId = document[StreamIdFieldName].AsGuidOrEventStoreException();
             var indexInStream = document[IndexInStreamFieldName].AsInt64OrEventStoreException();
             var indexInAllStreams = document[IndexInAllStreamsFileName].AsInt64OrEventStoreException();
-            var eventIndexInStream = document[EventIndexInStreamFieldName].AsInt64OrEventStoreException();
-            var eventIndexInAllSreams = document[EventIndexInAllStreamsFieldName].AsInt64OrEventStoreException();
+            var eventIndexInStreamStartsFrom = document[EventIndexInStreamFieldName].AsInt64OrEventStoreException();
+            var eventIndexInAllStreamsStartsFrom = document[EventIndexInAllStreamsFieldName].AsInt64OrEventStoreException();
             var eventIds = document[EventIdsFieldName]
                 .AsBsonArrayOrEventStoreException()
                 .Select(bsonValue => bsonValue.AsGuidOrEventStoreException())
@@ -46,8 +46,8 @@ namespace EventStore.Mongo
                 streamId:streamId,
                 indexInStream: indexInStream,
                 indexInAllStreams: indexInAllStreams,
-                eventIndexInStream: eventIndexInStream,
-                eventIndexInAllStreams: eventIndexInAllSreams,
+                eventIndexInStreamStartsFrom: eventIndexInStreamStartsFrom,
+                eventIndexInAllStreamsStartsFrom: eventIndexInAllStreamsStartsFrom,
                 eventIds: eventIds);
         }
     }

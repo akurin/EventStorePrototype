@@ -45,12 +45,12 @@ namespace EventStore.Mongo
             return InsertCommitResult.Success;
         }
 
-        public async Task<IAsyncCursor<BsonDocument>> GetCommitsInStreamAsync(Guid streamId, long startIndex)
+        public async Task<IAsyncCursor<BsonDocument>> FindCommitsInStreamAsync(Guid streamId, long startIndex)
         {
             var filter = Builders<BsonDocument>.Filter.Where(
                 commit =>
                     commit[CommitSerializer.StreamIdFieldName] == streamId &&
-                    commit[CommitSerializer.EventIndexInStream] >= startIndex);
+                    commit[CommitSerializer.EventIndexInStreamFieldName] >= startIndex);
 
             return await _commitCollection.FindAsync(filter);
         }
@@ -58,7 +58,7 @@ namespace EventStore.Mongo
         public async Task<IAsyncCursor<BsonDocument>> FindInAllStreamsAsync(long startIndex)
         {
             var filter = Builders<BsonDocument>.Filter.Where(
-                commit => commit[CommitSerializer.EventIndexInAllStreams] >= startIndex);
+                commit => commit[CommitSerializer.EventIndexInAllStreamsFieldName] >= startIndex);
 
             return await _commitCollection.FindAsync(filter);
         }
@@ -66,16 +66,16 @@ namespace EventStore.Mongo
         public async Task<Option<BsonDocument>> GetLastAsync()
         {
             var sortDefinition = Builders<BsonDocument>.Sort.Descending("_id");
-            var lastOrEmpty = await _commitCollection
+            var lastCommitDocument = await _commitCollection
                 .Find("{ }")
                 .Sort(sortDefinition)
                 .Limit(1)
                 .ToListAsync();
 
-            var result = lastOrEmpty.SingleOrDefault();
-            return result == null
+            var lastOrNull = lastCommitDocument.SingleOrDefault();
+            return lastOrNull == null
                 ? Option.None<BsonDocument>()
-                : Option.Some(result);
+                : Option.Some(lastOrNull);
         }
 
         public async Task<Option<BsonDocument>> GetLastInStreamAsync(Guid streamId)
@@ -94,14 +94,6 @@ namespace EventStore.Mongo
             return result == null
                 ? Option.None<BsonDocument>()
                 : Option.Some(result);
-        }
-
-        public async Task<long> CountAsync(Guid streamId)
-        {
-            var filter = Builders<BsonDocument>.Filter.Where(
-                commit => commit[CommitSerializer.StreamIdFieldName] == streamId);
-
-            return await _commitCollection.CountAsync(filter);
         }
     }
 }
