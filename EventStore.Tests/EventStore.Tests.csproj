@@ -70,6 +70,7 @@
     </Otherwise>
   </Choose>
   <ItemGroup>
+    <Compile Include="Benchmarks\AppendBenchmark.cs" />
     <Compile Include="CounterEventMother.cs" />
     <Compile Include="MongoEventStoreSpecification.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
